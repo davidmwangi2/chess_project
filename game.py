@@ -11,17 +11,27 @@ class Game:
     def play_turn(self, start_pos, end_pos):
         piece = self.board.get_piece(start_pos)
         if not piece or piece.color != self.current_turn:
+            print("Invalid move: No piece of yours at the start position.")
             return False
 
         valid_moves = piece.get_valid_moves(start_pos, self.board)
         if end_pos not in valid_moves:
+            print("Invalid move: Move not valid for that piece.")
             return False
 
+        # Check if the move leaves your king in check
+        new_board = self.board.copy()
+        new_board.move_piece(start_pos, end_pos)
+        if self.is_in_check_after_move(new_board, self.current_turn):
+            print("Invalid move: You cannot leave your king in check.")
+            return False
+
+        # Make the move on the actual board
         self.board.move_piece(start_pos, end_pos)
 
-        # Check/checkmate/stalemate detection
         opponent = 'black' if self.current_turn == 'white' else 'white'
 
+        # Check/checkmate/stalemate detection
         if self.is_in_check(opponent):
             print(f"{opponent.capitalize()} is in check!")
             if self.is_checkmate(opponent):
@@ -87,3 +97,6 @@ class Game:
                         if not self.is_in_check_after_move(new_board, color):
                             return False
         return True
+
+
+    
