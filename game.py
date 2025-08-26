@@ -19,7 +19,7 @@ class Game:
 
         self.board.move_piece(start_pos, end_pos)
 
-        # Check/checkmate/stalemate for opponent
+        # Check/checkmate/stalemate detection
         opponent = 'black' if self.current_turn == 'white' else 'white'
 
         if self.is_in_check(opponent):
