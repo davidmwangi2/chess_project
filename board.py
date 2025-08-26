@@ -34,3 +34,11 @@ class Board:
         for row in self.grid:
             print(" ".join([str(piece) if piece else '.' for piece in row]))
         print()
+   
+    def find_king(self, color):
+        for r in range(8):
+         for c in range(8):
+            piece = self.get_piece((r, c))
+            if piece and piece.name == 'King' and piece.color == color:
+                return (r, c)
+        return None
