@@ -1,23 +1,25 @@
 
 # main.py
-import pygame, sys, chess
-from constants import WIDTH, HEIGHT
-from db import init_db, create_game
-from board import BoardView, ChessGame
+import pygame
+from board import ChessGame
+from db import init_db, new_game   # <-- make sure you import from db, not pygame
 
 def main():
+    # Initialize pygame
     pygame.init()
-    pygame.display.set_caption("Pygame Chess")
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
+    # ✅ Initialize database (your function from db.py, not pygame)
     init_db()
-    game_id = create_game("White", "Black")
-    controller = ChessGame(game_id)
-    ui = BoardView(screen, controller)
-    ui.run()
 
-    pygame.quit()
-    sys.exit()
+    # ✅ Create a new game entry
+    game_id = new_game()
+
+    # ✅ Start the chess game GUI
+    game = ChessGame(game_id)
+    game.run()
 
 if __name__ == "__main__":
     main()
+
+
+

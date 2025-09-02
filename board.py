@@ -1,80 +1,110 @@
 
 # board.py
-import pygame, chess
-from constants import ROWS, COLS, SQUARE_SIZE, LIGHT_SQ, DARK_SQ, SELECT_BORDER
+import pygame
+import chess
 from pieces import load_piece_images
-from db import add_move, game_moves
 
 class ChessGame:
-    def __init__(self, game_id):
-        self.board = chess.Board()
+    def __init__(self, game_id, width=640, height=640):
         self.game_id = game_id
-        # replay saved moves
-        for move in game_moves(game_id):
-            self.board.push_uci(move)
+        self.board = chess.Board()
 
-    def push(self, move):
-        self.board.push(move)
-        add_move(self.game_id, move.uci())
+        # Setup pygame window
+        self.width = width
+        self.height = height
+        self.square_size = width // 8
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Chess Game")
 
-class BoardView:
-    def __init__(self, screen, game: ChessGame):
-        self.screen = screen
-        self.game = game
-        self.images = load_piece_images(SQUARE_SIZE)
-        self.selected_square = None
-        self.dragging_piece = None
+        # Load piece images
+        self.images = load_piece_images(self.square_size)
+
+        # Game state
+        self.running = True
+        self.selected_square = None  # starting square for dragging
+        self.dragging_piece = None   # piece being dragged
+        self.drag_offset = (0, 0)
 
     def draw_board(self):
-        for row in range(ROWS):
-            for col in range(COLS):
-                color = LIGHT_SQ if (row+col) % 2 == 0 else DARK_SQ
-                pygame.draw.rect(self.screen, color, (col*SQUARE_SIZE, row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+        colors = [pygame.Color("white"), pygame.Color("gray")]
+        for row in range(8):
+            for col in range(8):
+                color = colors[(row + col) % 2]
+                pygame.draw.rect(
+                    self.screen,
+                    color,
+                    pygame.Rect(col * self.square_size, row * self.square_size,
+                                self.square_size, self.square_size)
+                )
 
-    def draw_pieces(self):
-        for square, piece in self.game.board.piece_map().items():
-            col = chess.square_file(square)
-            row = 7 - chess.square_rank(square)
-            sym = piece.symbol()
-            img = self.images.get(sym)
+    def draw_pieces(self, mouse_pos=None):
+        """Draw pieces, except the one being dragged."""
+        for row in range(8):
+            for col in range(8):
+                square_index = (7 - row) * 8 + col
+                piece = self.board.piece_at(square_index)
+                if piece:
+                    symbol = piece.symbol()
+                    img = self.images.get(symbol)
+                    if img:
+                        # Don't draw the piece being dragged
+                        if self.dragging_piece and square_index == self.selected_square:
+                            continue
+                        self.screen.blit(img, (col * self.square_size, row * self.square_size))
+
+        # Draw dragging piece following mouse
+        if self.dragging_piece and mouse_pos:
+            img = self.images.get(self.dragging_piece.symbol())
             if img:
-                self.screen.blit(img, (col*SQUARE_SIZE, row*SQUARE_SIZE))
+                x, y = mouse_pos
+                self.screen.blit(img, (x - self.drag_offset[0], y - self.drag_offset[1]))
+
+    def pos_to_square(self, pos):
+        """Convert mouse position to a chess square index."""
+        x, y = pos
+        col = x // self.square_size
+        row = y // self.square_size
+        return (7 - row) * 8 + col  # chess.Board indexing
 
     def run(self):
-        running = True
         clock = pygame.time.Clock()
-        while running:
-            self.draw_board()
-            self.draw_pieces()
-            pygame.display.flip()
+
+        while self.running:
+            mouse_pos = pygame.mouse.get_pos()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    self.running = False
+
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.on_click(event.pos)
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    self.on_release(event.pos)
+                    square = self.pos_to_square(event.pos)
+                    piece = self.board.piece_at(square)
+                    if piece and (
+                        (piece.color and self.board.turn) or
+                        (not piece.color and not self.board.turn)
+                    ):
+                        self.selected_square = square
+                        self.dragging_piece = piece
+                        col = event.pos[0] % self.square_size
+                        row = event.pos[1] % self.square_size
+                        self.drag_offset = (col, row)
 
-            clock.tick(30)
+                elif event.type == pygame.MOUSEBUTTONUP and self.dragging_piece:
+                    target_square = self.pos_to_square(event.pos)
+                    move = chess.Move(self.selected_square, target_square)
 
-    def on_click(self, pos):
-        col = pos[0] // SQUARE_SIZE
-        row = 7 - (pos[1] // SQUARE_SIZE)
-        square = chess.square(col, row)
-        piece = self.game.board.piece_at(square)
-        if piece and ((piece.color and self.game.board.turn) or (not piece.color and not self.game.board.turn)):
-            self.selected_square = square
+                    if move in self.board.legal_moves:
+                        self.board.push(move)  # make valid move
 
-    def on_release(self, pos):
-        if self.selected_square is None:
-            return
-        col = pos[0] // SQUARE_SIZE
-        row = 7 - (pos[1] // SQUARE_SIZE)
-        target = chess.square(col, row)
+                    # reset drag state
+                    self.dragging_piece = None
+                    self.selected_square = None
 
-        move = chess.Move(self.selected_square, target)
-        if move in self.game.board.legal_moves:
-            self.game.push(move)
+            # Draw everything
+            self.draw_board()
+            self.draw_pieces(mouse_pos)
+            pygame.display.flip()
+            clock.tick(60)
 
-        self.selected_square = None
+        pygame.quit()
+
