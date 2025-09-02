@@ -1,35 +1,23 @@
 
-from game import Game
-
-def parse_input(input_str):
-    try:
-        start_str, end_str = input_str.strip().lower().split()
-        start = (8 - int(start_str[1]), ord(start_str[0]) - ord('a'))
-        end = (8 - int(end_str[1]), ord(end_str[0]) - ord('a'))
-        return start, end
-    except:
-        return None, None
+# main.py
+import pygame, sys, chess
+from constants import WIDTH, HEIGHT
+from db import init_db, create_game
+from board import BoardView, ChessGame
 
 def main():
-    game = Game()
+    pygame.init()
+    pygame.display.set_caption("Pygame Chess")
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-    while not game.game_over:
-        print(f"\n{game.current_turn.capitalize()}'s move:")
-        game.board.print_board()
+    init_db()
+    game_id = create_game("White", "Black")
+    controller = ChessGame(game_id)
+    ui = BoardView(screen, controller)
+    ui.run()
 
-        move_input = input("Enter move (e.g., e2 e4): ")
-        start, end = parse_input(move_input)
-
-        if start is None or end is None:
-            print("Invalid input format. Use e.g., 'e2 e4'")
-            continue
-
-        success = game.play_turn(start, end)
-        if not success:
-            print("Invalid move. Try again.")
-
-    print("Game over.")
-    game.board.print_board()
+    pygame.quit()
+    sys.exit()
 
 if __name__ == "__main__":
     main()
