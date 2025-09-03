@@ -18,25 +18,10 @@ This project aims to provide a fully functional chess game with a user-friendly 
 ## Usage
 
 Run the chess game using the following command:
-```bash
-python main.py
-```
+      
+      python main.py
+
 Follow the on-screen instructions to start a new game or load an existing one.
-
-## Project Structure
-
-```
-chess/
-├── main.py
-├── board.py
-├── pieces/
-│   ├── king.py
-│   ├── queen.py
-│   └── ...
-├── utils.py
-├── README.md
-```
-
 
 ## License
 
