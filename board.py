@@ -21,8 +21,8 @@ class ChessGame:
 
         # Game state
         self.running = True
-        self.selected_square = None  # starting square for dragging
-        self.dragging_piece = None   # piece being dragged
+        self.selected_square = None  
+        self.dragging_piece = None   
         self.drag_offset = (0, 0)
 
     def draw_board(self):
